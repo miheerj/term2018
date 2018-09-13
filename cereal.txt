@@ -1,0 +1,134 @@
+library(ggplot2)
+library(gridExtra)
+library(formattable)
+cereals=read.csv("../input/cereal.csv")
+strings <- cereals[1, ]
+head(strings)
+cereals = cereals[-1,]
+head(cereals)
+mfr <- unique(cereals$mfr)
+print(paste(length(mfr), 'manufacturers'))
+print(mfr)
+
+weight <- unique(cereals$weight)
+print(paste(length(weight), 'weight'))
+print(weight)
+
+cups <- unique(cereals$cups)
+print(paste(length(cups), 'cups'))
+print(cups)
+cereals$calories <- as.integer(as.character(cereals$calories))
+cereals$protein <- as.integer(as.character(cereals$protein))
+cereals$fat <- as.integer(as.character(cereals$fat))
+cereals$sodium <- as.integer(as.character(cereals$sodium))
+cereals$fiber <- as.numeric(as.character(cereals$fiber))
+cereals$carbo <- as.numeric(as.character(cereals$carbo))
+cereals$sugars <- as.integer(as.character(cereals$sugars))
+cereals$potass <- as.integer(as.character(cereals$potass))
+cereals$vitamins <- as.integer(as.character(cereals$vitamins))
+cereals$shelf <- as.integer(as.character(cereals$shelf))
+cereals$weight <- as.numeric(as.character(cereals$weight))
+cereals$cups <- as.numeric(as.character(cereals$cups))
+cereals$rating <- as.numeric(as.character(cereals$rating))
+ggplot() + 
+  geom_point(cereals, mapping=aes(x=mfr, y=weight, color=mfr, size=3)) +
+  labs(x="Manufacturer", y="Ounce") +
+  ggtitle("Manufacturers use Different Weights for One Serving")
+ggplot() + 
+  geom_point(cereals, mapping=aes(x=mfr, y=cups, color=mfr, size=3)) +
+  labs(x="Manufacturer", y="Cup") +
+  ggtitle("Manufacturers use Different Cups for One Serving")
+  
+cereals.cup <- data.frame( 
+  name = cereals$name,
+  mfr = cereals$mfr,
+  type = cereals$type,
+  calories= round(as.numeric(cereals$calories) / as.numeric(cereals$cups)),
+  protein= round(as.numeric(cereals$protein) / as.numeric(cereals$cups)),
+  fat= round(as.numeric(cereals$fat) / as.numeric(cereals$cups)),
+  sodium = round(as.numeric(cereals$sodium) / as.numeric(cereals$cups)),
+  fiber = round(as.numeric(cereals$fiber) / as.numeric(cereals$cups)),
+  carbo = round(as.numeric(cereals$carbo) / as.numeric(cereals$cups)),
+  sugars = round(as.numeric(cereals$sugars) / as.numeric(cereals$cups)),
+  potass = round(as.numeric(cereals$potass) / as.numeric(cereals$cups)),
+  vitamins = round(as.numeric(cereals$vitamins) / as.numeric(cereals$cups)),
+  shelf = round(as.numeric(cereals$shelf) / as.numeric(cereals$cups)),
+  weight = as.numeric(cereals$weight) / as.numeric(cereals$cups),
+  rating = cereals$rating)
+plot_protein_fiber <- function(cereals, xlim, ylim, title){
+  ggplot() + 
+    geom_point(cereals, mapping=aes(x=protein, y=fiber, color=mfr, size=fat, shape=type)) +
+    coord_cartesian(xlim=xlim, ylim=ylim) +
+    labs(x="Protein", y="Fiber") +
+    ggtitle(title) 
+}
+
+plot1 <- plot_protein_fiber(cereals, c(0, 12), c(0, 30), "Protein vs Fiber vs Types per Serving")
+plot2 <- plot_protein_fiber(cereals.cup, c(0, 12), c(0, 30), "Protein vs Fiber vs Types per Cup")
+grid.arrange(plot1, plot2, ncol=2)
+cat("Range of calories per weight:", min(cereals$calories, na.rm = TRUE), "-", max(cereals$calories, na.rm = TRUE), "\n")
+cat("Range of calories per cup:", min(cereals.cup$calories, na.rm = TRUE), "-", max(cereals.cup$calories, na.rm = TRUE), "\n")
+plot_sugars_calories <- function(cereals, xlim, ylim, title){
+  ggplot(data=cereals, aes(x=sugars, y=calories, col=rating)) +
+    geom_jitter() +
+    geom_text(aes(label=mfr),hjust=0, vjust=0) +
+    labs(x="Sugar", y="Calories") +
+    coord_cartesian(xlim=xlim, ylim=ylim) +
+    geom_smooth(method="lm", se=FALSE, col="grey") +
+    scale_color_gradient(low="blue", high="red") +
+    ggtitle(title) +
+    theme(legend.position="bottom")
+}
+
+plot1 <- plot_sugars_calories(cereals, c(0, 22), c(0, 450), "Sugar vs. Calories per Serving")
+plot2 <- plot_sugars_calories(cereals.cup, c(0, 22), c(0, 450), "Sugar vs. Calories per Cup")
+grid.arrange(plot1, plot2, ncol=2)
+plot_sugars_sodium <- function(cereals, xlim, ylim, title){
+  ggplot(data=cereals, aes(x=sugars, y=sodium, col=rating)) +
+    geom_jitter() +
+    geom_text(aes(label=mfr),hjust=0, vjust=0) +
+    labs(x="Sugar", y="Sodium") +
+    coord_cartesian(xlim=xlim, ylim=ylim) +
+    scale_color_gradient(low="blue", high="red") +
+    ggtitle(title) +
+    theme(legend.position="bottom")
+}
+
+plot1 <- plot_sugars_sodium(cereals, c(0, 22), c(0, 800), "Sugar vs. Sodium per Serving")
+plot2 <- plot_sugars_sodium(cereals.cup, c(0, 22), c(0, 800), "Sugar vs. Sodium per Cup")
+grid.arrange(plot1, plot2, ncol=2)
+cereals.per.serving <- data.frame( 
+  name = cereals$name,
+  mfr = cereals$mfr,
+  good = cereals$protein + cereals$fiber + cereals$vitamins,
+  bad = cereals$fat + cereals$sodium + cereals$potass + cereals$sugars,
+  rating = cereals$rating
+)
+
+cereals.per.cup <- data.frame( 
+  name = cereals$name,
+  mfr = cereals.cup$mfr,
+  good = cereals.cup$protein + cereals.cup$fiber + cereals.cup$vitamins,
+  bad = cereals.cup$fat + cereals.cup$sodium + cereals.cup$potass + cereals.cup$sugars,
+  rating = cereals$rating
+)
+plot_combined <- function(cereals, xlim, ylim, title){
+  ggplot(data=cereals, aes(x=bad, y=good, col=rating)) +
+    geom_jitter() +
+    geom_text(aes(label=mfr),hjust=0, vjust=0) +
+    labs(x="Bad (fat, sodium, potass, sugars)", y="Good (protein, fiber, vitamins)") +
+    coord_cartesian(xlim=xlim, ylim=ylim) +
+    scale_color_gradient(low="blue", high="red") +
+    ggtitle(title) +
+    theme(legend.position="bottom")
+}
+
+plot1 <- plot_combined(cereals.per.serving, c(0, 1300), c(0, 150), "Combined Nutrition per Serving")
+plot2 <- plot_combined(cereals.per.cup, c(0, 1300), c(0, 150), "Combined Nutrition per Cup")
+grid.arrange(plot1, plot2, ncol=2)
+formattable(cereals.per.cup[order(-cereals.per.cup$good),], list(
+  good = color_bar("springgreen"),
+  bad = color_bar("coral")))
+formattable(cereals.per.cup[order(-cereals.per.cup$bad),], list(
+  good = color_bar("springgreen"),
+  bad = color_bar("coral")))
